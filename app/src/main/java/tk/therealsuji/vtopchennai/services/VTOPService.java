@@ -1344,7 +1344,7 @@ public class VTOPService extends Service {
                 "};" +
                 "$.ajax({" +
                 "    type: 'POST'," +
-                "    url : 'examinations/doStudentMarkView'," +
+                "    url : 'examinations/StudentMarkView'," +
                 "    data : data," +
                 "    async: false," +
                 "    success: function(res) {" +
