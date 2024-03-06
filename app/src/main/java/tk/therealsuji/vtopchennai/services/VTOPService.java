@@ -934,7 +934,7 @@ public class VTOPService extends Service {
             }
         });
     }
-
+// TODO :  Download timetable is right here
     /**
      * Function to download the timetable.
      */
@@ -1202,34 +1202,39 @@ public class VTOPService extends Service {
                 "    async: false," +
                 "    success : function(res) {" +
                 "        var doc = new DOMParser().parseFromString(res, 'text/html');" +
-                "        var table = doc.getElementById('getStudentDetails');" +
-                "        var headings = table.getElementsByTagName('th');" +
-                "        var courseTypeIndex, slotIndex, attendedIndex, totalIndex, percentageIndex;" +
-                "        for(var i = 0; i < headings.length; ++i) {" +
+                "        var thead = doc.querySelector('#AttendanceDetailDataTable > thead');" +
+                "        var headings = thead.getElementsByTagName('td');" +
+                "        var courseTypeIndex, classIndex, facultyIndex, attendedIndex, totalIndex, percentageIndex;" +
+                "        for (var i = 0; i < headings.length; ++i) {" +
                 "            var heading = headings[i].innerText.toLowerCase();" +
-                "            if (heading.includes('course') && heading.includes('type')) {" +
+                "            if (heading.includes('course')) {" +
                 "                courseTypeIndex = i;" +
-                "            } else if (heading.includes('slot')) {" +
-                "                slotIndex = i;" +
-                "            } else if (heading.includes('attended')) {" +
+                "            } else if (heading.includes('class') && heading.includes('detail')) {" +
+                "                classIndex = i;" +
+                "            } else if (heading.includes('faculty') && heading.includes('detail')) {" +
+                "                facultyIndex = i;" +
+                "            } else if (heading.includes('attended') && heading.includes('classes')) {" +
                 "                attendedIndex = i;" +
-                "            } else if (heading.includes('total')) {" +
+                "            } else if (heading.includes('total') && heading.includes('classes')) {" +
                 "                totalIndex = i;" +
                 "            } else if (heading.includes('percentage')) {" +
                 "                percentageIndex = i;" +
                 "            }" +
                 "        }" +
-                "        var cells = table.getElementsByTagName('td');" +
-                "        while (courseTypeIndex < cells.length && slotIndex < cells.length  && attendedIndex < cells.length && totalIndex < cells.length && percentageIndex < cells.length) {" +
+                "        var tbody = doc.querySelector('#AttendanceDetailDataTable > tbody');" +
+                "        var cells = tbody.getElementsByTagName('td');" +
+                "        while (courseTypeIndex < cells.length && classIndex < cells.length && attendedIndex < cells.length && totalIndex < cells.length && percentageIndex < cells.length && facultyIndex < cells.length) {" +
                 "            var attendanceObject = {};" +
-                "            attendanceObject.course_type = cells[courseTypeIndex].innerText.trim();" +
-                "            attendanceObject.slot = cells[slotIndex].innerText.trim().split('+')[0].trim();" +
+                "            attendanceObject.course_type = cells[courseTypeIndex].innerText.trim().split('-')[2].trim().toLowerCase().includes('lab') ? 'Lab Only' : 'Theory Only';" +
+                "            var slotsplit = cells[classIndex].innerText.trim().split('-')[1].trim();" +
+                "            attendanceObject.slot = slotsplit.split('+')[0].trim();" +
                 "            attendanceObject.attended = parseInt(cells[attendedIndex].innerText.trim()) || 0;" +
                 "            attendanceObject.total = parseInt(cells[totalIndex].innerText.trim()) || 0;" +
                 "            attendanceObject.percentage = parseInt(cells[percentageIndex].innerText.trim()) || 0;" +
                 "            response.attendance.push(attendanceObject);" +
                 "            courseTypeIndex += headings.length;" +
-                "            slotIndex += headings.length;" +
+                "            classIndex += headings.length;" +
+                "            facultyIndex += headings.length;" +
                 "            attendedIndex += headings.length;" +
                 "            totalIndex += headings.length;" +
                 "            percentageIndex += headings.length;" +
@@ -1337,85 +1342,54 @@ public class VTOPService extends Service {
          *      ]
          *  }
          */
-        webView.evaluateJavascript("(function() {" +
-                "var data = 'semesterSubId=' + '" + semesterID + "' + '&authorizedID=' + $('#authorizedIDX').val()  + '&_csrf=' + $('input[name=\"_csrf\"]').val();" +
-                "var response = {" +
-                "    marks: []" +
-                "};" +
-                "$.ajax({" +
-                "    type: 'POST'," +
-                "    url : 'examinations/doStudentMarkView'," +
-                "    data : data," +
-                "    async: false," +
-                "    success: function(res) {" +
-                "        if(res.toLowerCase().includes('no data found')) {" +
-                "            return;" +
-                "        }" +
-                "        var doc = new DOMParser().parseFromString(res, 'text/html');" +
-                "        var table = doc.getElementById('fixedTableContainer');" +
-                "        var rows = table.getElementsByTagName('tr');" +
-                "        var headings = rows[0].getElementsByTagName('td');" +
-                "        var courseTypeIndex, slotIndex;" +
-                "        for (var i = 0; i < headings.length; ++i) {" +
-                "            var heading = headings[i].innerText.toLowerCase();" +
-                "            if (heading.includes('course') && heading.includes('type')) {" +
-                "                courseTypeIndex = i;" +
-                "            } else if (heading.includes('slot')) {" +
-                "                slotIndex = i;" +
-                "            }" +
-                "        }" +
-                "        for (var i = 1; i < rows.length; ++i) {" +
-                "            var rawCourseType = rows[i].getElementsByTagName('td')[courseTypeIndex].innerText.trim().toLowerCase();" +
-                "            var courseType = (rawCourseType.includes('lab')) ? 'lab' : ((rawCourseType.includes('project')) ? 'project' : 'theory');" +
-                "            var slot = rows[i++].getElementsByTagName('td')[slotIndex].innerText.split('+')[0].trim();" +
-                "            var innerTable = rows[i].getElementsByTagName('table')[0];" +
-                "            var innerRows = innerTable.getElementsByTagName('tr');" +
-                "            var innerHeadings = innerRows[0].getElementsByTagName('td');" +
-                "            var titleIndex, scoreIndex, maxScoreIndex, weightageIndex, maxWeightageIndex, averageIndex, statusIndex;" +
-                "            for (var j = 0; j < innerHeadings.length; ++j) {" +
-                "                var innerHeading = innerHeadings[j].innerText.toLowerCase();" +
-                "                if (innerHeading.includes('title')) {" +
-                "                    titleIndex = j + innerHeadings.length;" +
-                "                } else if (innerHeading.includes('max')) {" +
-                "                    maxScoreIndex = j + innerHeadings.length;" +
-                "                } else if (innerHeading.includes('%')) {" +
-                "                    maxWeightageIndex = j + innerHeadings.length;" +
-                "                } else if (innerHeading.includes('status')) {" +
-                "                    statusIndex = j + innerHeadings.length;" +
-                "                } else if (innerHeading.includes('scored')) {" +
-                "                    scoreIndex = j + innerHeadings.length;" +
-                "                } else if (innerHeading.includes('weightage') && innerHeading.includes('mark')) {" +
-                "                    weightageIndex = j + innerHeadings.length;" +
-                "                } else if (innerHeading.includes('average')) {" +
-                "                    averageIndex = j + innerHeadings.length;" +
-                "                }" +
-                "            }" +
-                "            var innerCells = innerTable.getElementsByTagName('td');" +
-                "            while(titleIndex < innerCells.length && scoreIndex < innerCells.length && maxScoreIndex < innerCells.length && weightageIndex < innerCells.length && maxWeightageIndex < innerCells.length && averageIndex < innerCells.length && statusIndex < innerCells.length) {" +
-                "                var mark = {};" +
-                "                mark.slot = slot;" +
-                "                mark.course_type = courseType;" +
-                "                mark.title = innerCells[titleIndex].innerText.trim();" +
-                "                mark.score = parseFloat(innerCells[scoreIndex].innerText) || 0;" +
-                "                mark.max_score = parseFloat(innerCells[maxScoreIndex].innerText) || null;" +
-                "                mark.weightage = parseFloat(innerCells[weightageIndex].innerText) || 0;" +
-                "                mark.max_weightage = parseFloat(innerCells[maxWeightageIndex].innerText) || null;" +
-                "                mark.average = parseFloat(innerCells[averageIndex].innerText) || null;" +
-                "                mark.status = innerCells[statusIndex].innerText.trim();" +
-                "                response.marks.push(mark);" +
-                "                titleIndex += innerHeadings.length;" +
-                "                scoreIndex += innerHeadings.length;" +
-                "                maxScoreIndex += innerHeadings.length;" +
-                "                weightageIndex += innerHeadings.length;" +
-                "                maxWeightageIndex += innerHeadings.length;" +
-                "                averageIndex += innerHeadings.length;" +
-                "                statusIndex += innerHeadings.length;" +
-                "            }" +
-                "            i += innerRows.length;" +
-                "        }" +
-                "    }" +
-                "});" +
-                "return response;" +
+        webView.evaluateJavascript("(function() { " +
+                "var data = '_csrf=' + $('input[name=\"_csrf\"]').val() + '&semesterSubId=' + '" + semesterID + "' + '&authorizedID=' + $('#authorizedIDX').val();" +
+                "var response = { marks: [] };" +
+                "$.ajax({ " +
+                "   type: 'POST', " +
+                "   url: 'examinations/doStudentMarkView', " +
+                "   data: data, " +
+                "   async: false, " +
+                "   success: function(res) { " +
+                "       if (res.toLowerCase().includes('no data found')) { " +
+                "           return; " +
+                "       } " +
+                "       var doc = new DOMParser().parseFromString(res, 'text/html'); " +
+                "       var table = doc.getElementById('fixedTableContainer'); " +
+                "       var rows = table.getElementsByTagName('tr'); " +
+                "       var headings = rows[0].getElementsByTagName('td'); " +
+                "       var courseTypeIndex, slotIndex , facultyIndex;" +
+                "       for (var i = 0; i < headings.length; ++i) { " +
+                "           var heading = headings[i].innerText.toLowerCase(); " +
+                "           if (heading.includes('course') && heading.includes('type')) { " +
+                "               courseTypeIndex = i; " +
+                "           } else if (heading.includes('slot')) { " +
+                "               slotIndex = i; " +
+                "           }else if (heading.includes('faculty')){" +
+                "           facultyIndex = i; }"+
+                "       } " +
+                "       var tableContent = doc.querySelector('#fixedTableContainer > table > tbody').getElementsByClassName('tableContent'); " +
+                "       marksArray = []; " +
+                "       for (var i = 0; i < tableContent.length; i += 2) { " +
+                "           var cells = tableContent[i].getElementsByTagName('td'); " +
+                "           var innerCells = tableContent[i + 1] ? tableContent[i + 1].getElementsByTagName('td') : null; " +
+                "           if (innerCells) { " +
+                "               var slot = cells[slotIndex].textContent.trim().split('+')[0].trim(); " +
+                "               var course_type = cells[courseTypeIndex].textContent.trim().toLowerCase().includes('lab') ? 'lab' : 'theory'; " +
+                "               var faculty = cells[facultyIndex].textContent.trim(); " +
+                "               var title = innerCells[10].textContent.trim(); " +
+                "               var score = parseFloat(innerCells[14].textContent.trim()); " +
+                "               var max_score = parseFloat(innerCells[11].textContent.trim()); " +
+                "               var weightage = parseFloat(innerCells[15].textContent.trim()); " +
+                "               var max_weightage = parseFloat(innerCells[12].textContent.trim()); " +
+                "               var status = innerCells[13].textContent.trim(); " +
+                "               marksArray.push({ slot, course_type, title, score, max_score, weightage, max_weightage, average: null, status , faculty }); " +
+                "           } " +
+                "       } " +
+                "       response.marks = marksArray; " +
+                "   } " +
+                "}); " +
+                "return response; " +
                 "})();", responseString -> {
             try {
                 JSONObject response = new JSONObject(responseString);
