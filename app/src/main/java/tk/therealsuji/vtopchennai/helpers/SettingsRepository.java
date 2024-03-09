@@ -81,7 +81,7 @@ public class SettingsRepository {
     public static final String MOODLE_LOGIN_PATH = "/login/token.php";
     public static final String MOODLE_UPLOAD_PATH = "/webservice/upload.php";
     public static final String MOODLE_WEBSERVICE_PATH = "/webservice/rest/server.php";
-// TODO : VTOP LINK
+
     public static final String VTOP_BASE_URL = "https://vtop.vitap.ac.in/vtop";
 
     public static final int THEME_DAY = 1;
