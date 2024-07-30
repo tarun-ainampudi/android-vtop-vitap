@@ -161,6 +161,8 @@ public class VTOPService extends Service {
      */
     @SuppressLint("SetJavaScriptEnabled")
     private void createWebView() {
+        NotificationCompat.Builder notification;
+        NotificationManager notificationManager ;
         this.webView = new WebView(getApplicationContext());
         this.webView.addJavascriptInterface(this, "Android");
         this.webView.getSettings().setJavaScriptEnabled(true);
@@ -177,14 +179,19 @@ public class VTOPService extends Service {
                  *      "page_type": "LANDING"|"HOME"|"LOGIN"
                  *  }
                  */
-                view.evaluateJavascript("(function() {" +
+                view.evaluateJavascript( "(function() {" +
                         "const response = {" +
-                        "   page_type: 'LANDING'" +
+                        "   page_type: \"LANDING\"" +
                         "};" +
                         "if ($('input[id=\"authorizedIDX\"]').length === 1) {" +
-                        "   response.page_type = 'HOME';" +
-                        "} if ($('form[id=\"vtopLoginForm\"]').length === 1) {" +
-                        "   response.page_type = 'LOGIN';" +
+                        "   response.page_type = \"HOME\";" +
+                        "}" +
+                        "if ($('form[id=\"vtopLoginForm\"]').length === 1) {" +
+                        "   if ($('#recaptcha > div > div.grecaptcha-error').length > 0) {" +
+                        "       response.page_type = \"ERRORCATPCHA\";" +
+                        "   } else {" +
+                        "       response.page_type = \"LOGIN\";" +
+                        "   }" +
                         "}" +
                         "return response;" +
                         "})();", responseString -> {
@@ -193,6 +200,18 @@ public class VTOPService extends Service {
                         String pageType = response.getString("page_type");
 
                         switch (pageType) {
+                            case "ERRORCATPCHA":
+                                if (counter >= 10) {
+                                    error(101, "Couldn't connect to the server.");
+                                    endService(true);
+                                    return;
+                                }
+
+                                openSignIn();
+                                ++counter;
+
+                                pageState = PageState.LANDING;
+                                break;
                             case "LANDING":
                                 if (counter >= 10) {
                                     error(101, "Couldn't connect to the server.");
@@ -360,6 +379,7 @@ public class VTOPService extends Service {
     /**
      * Function to get the type of captcha (Default Captcha / Google reCaptcha).
      */
+
     private void getCaptchaType() {
         /*
          *  JSON response format
@@ -1651,71 +1671,44 @@ public class VTOPService extends Service {
                 "var data = 'semesterSubId=' + '" + semesterID + "' + '&authorizedID=' + $('#authorizedIDX').val()  + '&_csrf=' + $('input[name=\"_csrf\"]').val();" +
                 "var response = {};" +
                 "$.ajax({" +
-                "    type: 'POST'," +
-                "    url: 'examinations/doSearchExamScheduleForStudent'," +
-                "    data: data," +
-                "    async: false," +
-                "    success: function(res) {" +
-                "        if(res.toLowerCase().includes('not found')) {" +
-                "            return;" +
-                "        }" +
-                "        var doc = new DOMParser().parseFromString(res, 'text/html');" +
-                "        var slotIndex, dateIndex, timingIndex, venueIndex, locationIndex, numberIndex;" +
-                "        var columns = doc.getElementsByTagName('tr')[0].getElementsByTagName('td');" +
-                "        for (var i = 0; i < columns.length; ++i) {" +
-                "            var heading = columns[i].innerText.toLowerCase();" +
-                "            if (heading.includes('slot')) {" +
-                "                slotIndex = i;" +
-                "            } else if (heading.includes('date')) {" +
-                "                dateIndex = i;" +
-                "            } else if (heading.includes('exam') && heading.includes('time')) {" +
-                "                timingIndex = i;" +
-                "            } else if (heading.includes('venue')) {" +
-                "                venueIndex = i;" +
-                "            } else if (heading.includes('location')) {" +
-                "                locationIndex = i;" +
-                "            } else if (heading.includes('seat') && heading.includes('no.')) {" +
-                "                numberIndex = i;" +
-                "            }" +
-                "        }" +
-                "        var examTitle = '', exam = {}, cells = doc.getElementsByTagName('td');" +
-                "        for (var i = columns.length; i < cells.length; ++i) {" +
-                "            if (cells[i].colSpan > 1) {" +
-                "                examTitle = cells[i].innerText.trim();" +
-                "                response[examTitle] = [];" +
-                "                continue;" +
-                "            }" +
-                "            var index = (i - Object.keys(response).length) % columns.length;" +
-                "            if (index == slotIndex) {" +
-                "                exam.slot = cells[i].innerText.trim().split('+')[0];" +
-                "            } else if (index == dateIndex) {" +
-                "                var date = cells[i].innerText.trim().toUpperCase();" +
-                "                exam.date = date == '' ? null : date;" +
-                "            } else if (index == timingIndex) {" +
-                "                var timings = cells[i].innerText.trim().split('-');" +
-                "                if (timings.length == 2) {" +
-                "                    exam.start_time = timings[0].trim();" +
-                "                    exam.end_time = timings[1].trim();" +
-                "                } else {" +
-                "                    exam.start_time = null;" +
-                "                    exam.end_time = null;" +
-                "                }" +
-                "            } else if (index == venueIndex) {" +
-                "                var venue = cells[i].innerText.trim();" +
-                "                exam.venue = venue.replace(/-/g,'') == '' ? null : venue;" +
-                "            } else if (index == locationIndex) {" +
-                "                var location = cells[i].innerText.trim();" +
-                "                exam.seat_location = location.replace(/-/g,'') == '' ? null : location;" +
-                "            } else if (index == numberIndex) {" +
-                "                var number = cells[i].innerText.trim();" +
-                "                exam.seat_number = number.replace(/-/g,'') == '' ? null : parseInt(number);" +
-                "            }" +
-                "            if (Object.keys(exam).length == 7) {" +
-                "                response[examTitle].push(exam);" +
-                "                exam = {};" +
-                "            }" +
-                "        }" +
-                "    }" +
+                "type: 'POST'," +
+                "url: 'examinations/doSearchExamScheduleForStudent'," +
+                "data: data," +
+                "async: false," +
+                "success: function(res) {" +
+                "if(res.toLowerCase().includes('not found')) {" +
+                "return;" +
+                "}" +
+                "var doc = new DOMParser().parseFromString(res, 'text/html');" +
+                "const table = doc.querySelector('.customTable');" +
+                "const rows = table.querySelectorAll('tr.tableContent');" +
+                "let result = {};" +
+                "let currentExamType = '';" +
+                "function extractSlot(slotText) {" +
+                "return slotText.split('+')[0];" +
+                "}" +
+                "rows.forEach(row => {" +
+                "if (row.querySelector('.panelHead-secondary')) {" +
+                "currentExamType = row.textContent.trim();" +
+                "result[currentExamType] = [];" +
+                "} else {" +
+                "const cells = row.querySelectorAll('td');" +
+                "if (cells.length >= 13) {" +
+                "const examData = {" +
+                "slot: extractSlot(cells[5].textContent.trim())," +
+                "date: cells[6].textContent.trim()," +
+                "start_time: cells[9].textContent.split('-')[0].trim()," +
+                "end_time: cells[9].textContent.split('-')[1].trim()," +
+                "venue: cells[10].textContent.trim()," +
+                "seat_location: cells[11].textContent.trim()," +
+                "seat_number: parseInt(cells[12].textContent.trim())" +
+                "};" +
+                "result[currentExamType].push(examData);" +
+                "}" +
+                "}" +
+                "});" +
+                "response = result;" +
+                "}" +
                 "});" +
                 "return response;" +
                 "})();", responseString -> {

@@ -67,13 +67,13 @@ import tk.therealsuji.vtopchennai.receivers.ExamNotificationReceiver;
 import tk.therealsuji.vtopchennai.receivers.TimetableNotificationReceiver;
 
 public class SettingsRepository {
-    public static final String APP_BASE_URL = "https://vtopchennai.therealsuji.tk";
+    public static final String APP_BASE_URL = "https://vitstudent.sanjaydev.site";
     public static final String APP_ABOUT_URL = APP_BASE_URL + "/about.json";
-    public static final String APP_PRIVACY_URL = APP_BASE_URL + "/privacy-policy";
+    public static final String APP_PRIVACY_URL = "https://vtopchennai.therealsuji.tk" + "/privacy-policy";
 
-    public static final String DEVELOPER_BASE_URL = "https://therealsuji.tk";
+    public static final String DEVELOPER_BASE_URL = "https://sanjay7178.github.io";
 
-    public static final String GITHUB_BASE_URL = "https://github.com/therealsujitk/android-vtop-chennai";
+    public static final String GITHUB_BASE_URL = "https://github.com/sanjay7178/android-vtop-vitap";
     public static final String GITHUB_FEATURE_URL = GITHUB_BASE_URL + "/issues";
     public static final String GITHUB_ISSUE_URL = GITHUB_BASE_URL + "/issues";
 
@@ -92,6 +92,7 @@ public class SettingsRepository {
     public static final int NOTIFICATION_ID_EXAMS = 1;
     public static final int NOTIFICATION_ID_TIMETABLE = 2;
     public static final int NOTIFICATION_ID_VTOP_DOWNLOAD = 3;
+    public static final int NOTIFICATION_REFRESH_PAGE = 8 ;
 
     public static int getTheme(Context context) {
         String appearance = getSharedPreferences(context).getString("appearance", "system");

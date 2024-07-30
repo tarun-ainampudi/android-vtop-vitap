@@ -34,9 +34,9 @@ jobs:
       - name: Rename signed apk
         run: |
           cd app/build/outputs/apk/release
-          mv app-release-unsigned-signed.apk vtop_chennai_${{ github.ref_name }}.apk
+          mv app-release-unsigned-signed.apk vtop_ap_${{ github.ref_name }}.apk
 
       - name: Upload signed apk
         uses: softprops/action-gh-release@v1
         with:
-          files: app/build/outputs/apk/release/vtop_chennai_${{ github.ref_name }}.apk
+          files: app/build/outputs/apk/release/vtop_ap_${{ github.ref_name }}.apk
