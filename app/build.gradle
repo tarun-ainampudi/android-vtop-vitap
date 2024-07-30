@@ -17,7 +17,7 @@ android {
         targetSdkVersion 34
         compileSdk 34
         versionCode 31
-        versionName "4.3.3"
+        versionName "v3.0"
     }
 
     buildTypes {
@@ -54,6 +54,7 @@ dependencies {
     implementation 'io.noties.markwon:core:4.6.2'
 
     implementation 'io.reactivex.rxjava3:rxandroid:3.0.0'
+    implementation 'com.google.firebase:firebase-inappmessaging-display:21.0.0'
 
     debugImplementation 'com.squareup.leakcanary:leakcanary-android:2.8.1'
 
