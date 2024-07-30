@@ -203,7 +203,7 @@ public class SettingsRepository {
 
         return hasPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE);
     }
-
+// TODO : Update check is here
     public static Observable<JSONObject> checkForUpdates() {
         return Observable.fromCallable(() -> {
                     try {
