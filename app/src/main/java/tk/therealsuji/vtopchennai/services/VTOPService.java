@@ -161,6 +161,8 @@ public class VTOPService extends Service {
      */
     @SuppressLint("SetJavaScriptEnabled")
     private void createWebView() {
+        NotificationCompat.Builder notification;
+        NotificationManager notificationManager ;
         this.webView = new WebView(getApplicationContext());
         this.webView.addJavascriptInterface(this, "Android");
         this.webView.getSettings().setJavaScriptEnabled(true);
@@ -177,14 +179,19 @@ public class VTOPService extends Service {
                  *      "page_type": "LANDING"|"HOME"|"LOGIN"
                  *  }
                  */
-                view.evaluateJavascript("(function() {" +
+                view.evaluateJavascript( "(function() {" +
                         "const response = {" +
-                        "   page_type: 'LANDING'" +
+                        "   page_type: \"LANDING\"" +
                         "};" +
                         "if ($('input[id=\"authorizedIDX\"]').length === 1) {" +
-                        "   response.page_type = 'HOME';" +
-                        "} if ($('form[id=\"vtopLoginForm\"]').length === 1) {" +
-                        "   response.page_type = 'LOGIN';" +
+                        "   response.page_type = \"HOME\";" +
+                        "}" +
+                        "if ($('form[id=\"vtopLoginForm\"]').length === 1) {" +
+                        "   if ($('#recaptcha > div > div.grecaptcha-error').length > 0) {" +
+                        "       response.page_type = \"ERRORCATPCHA\";" +
+                        "   } else {" +
+                        "       response.page_type = \"LOGIN\";" +
+                        "   }" +
                         "}" +
                         "return response;" +
                         "})();", responseString -> {
@@ -193,6 +200,18 @@ public class VTOPService extends Service {
                         String pageType = response.getString("page_type");
 
                         switch (pageType) {
+                            case "ERRORCATPCHA":
+                                if (counter >= 10) {
+                                    error(101, "Couldn't connect to the server.");
+                                    endService(true);
+                                    return;
+                                }
+
+                                openSignIn();
+                                ++counter;
+
+                                pageState = PageState.LANDING;
+                                break;
                             case "LANDING":
                                 if (counter >= 10) {
                                     error(101, "Couldn't connect to the server.");
@@ -360,6 +379,7 @@ public class VTOPService extends Service {
     /**
      * Function to get the type of captcha (Default Captcha / Google reCaptcha).
      */
+
     private void getCaptchaType() {
         /*
          *  JSON response format

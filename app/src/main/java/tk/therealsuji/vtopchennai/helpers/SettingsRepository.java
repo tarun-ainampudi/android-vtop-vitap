@@ -92,6 +92,7 @@ public class SettingsRepository {
     public static final int NOTIFICATION_ID_EXAMS = 1;
     public static final int NOTIFICATION_ID_TIMETABLE = 2;
     public static final int NOTIFICATION_ID_VTOP_DOWNLOAD = 3;
+    public static final int NOTIFICATION_REFRESH_PAGE = 8 ;
 
     public static int getTheme(Context context) {
         String appearance = getSharedPreferences(context).getString("appearance", "system");
