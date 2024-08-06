@@ -9,6 +9,7 @@ import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.net.http.SslError;
 import android.os.Binder;
 import android.os.Bundle;
 import android.os.Handler;
@@ -17,6 +18,7 @@ import android.util.Base64;
 import android.view.ViewGroup;
 import android.webkit.CookieManager;
 import android.webkit.JavascriptInterface;
+import android.webkit.SslErrorHandler;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Toast;
@@ -156,6 +158,14 @@ public class VTOPService extends Service {
         return START_NOT_STICKY;
     }
 
+    private class MyWebViewClient extends WebViewClient {
+        @Override
+        public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
+            // Ignore SSL certificate errors
+            handler.proceed();
+        }
+    }
+
     /**
      * Function to create a fresh WebView
      */
@@ -170,7 +180,8 @@ public class VTOPService extends Service {
         this.webView.setBackgroundColor(Color.TRANSPARENT);
         this.webView.setHorizontalScrollBarEnabled(false);
         this.webView.setVerticalScrollBarEnabled(false);
-        this.webView.setWebViewClient(new WebViewClient() {
+        //
+        this.webView.setWebViewClient(new MyWebViewClient() {
             @Override
             public void onPageFinished(WebView view, String url) {
                 /*

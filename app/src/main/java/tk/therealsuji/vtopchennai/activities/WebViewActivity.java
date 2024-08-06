@@ -12,7 +12,21 @@ import com.google.firebase.analytics.FirebaseAnalytics;
 
 import tk.therealsuji.vtopchennai.R;
 
+import android.net.http.SslError;
+//import android.os.Bundle;
+import android.webkit.SslErrorHandler;
+//import android.webkit.WebView;
+//import android.webkit.WebViewClient;
+
+
 public class WebViewActivity extends AppCompatActivity {
+    private class MyWebViewClient extends WebViewClient {
+        @Override
+        public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
+            // Ignore SSL certificate errors
+            handler.proceed();
+        }
+    }
 
     @Override
     @SuppressLint("SetJavaScriptEnabled")
@@ -29,7 +43,7 @@ public class WebViewActivity extends AppCompatActivity {
         titleView.setText(title);
 
         WebView webView = findViewById(R.id.web_view);
-        webView.setWebViewClient(new WebViewClient());
+        webView.setWebViewClient(new MyWebViewClient());
         webView.getSettings().setJavaScriptEnabled(true);
         webView.loadUrl(url);
     }
