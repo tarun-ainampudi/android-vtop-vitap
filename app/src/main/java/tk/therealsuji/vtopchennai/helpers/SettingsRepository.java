@@ -87,6 +87,8 @@ public class SettingsRepository {
     public static final String UNIV_URL = "http://172.18.10.10:1000/login?" ;
     public static final String HOSTEL_URL = "https://hfw.vitap.ac.in:8090/httpclient.html" ;
 
+    public static final String FACULTY_RANKER_URL = "https://faculty-ranker.vercel.app/";
+    public static final String TIME_TABLE_SCHEDULER_URL = "http://vitap-time-table-scheduler.vercel.app/";
 
     public static final int THEME_DAY = 1;
     public static final int THEME_NIGHT = 2;
