@@ -70,7 +70,7 @@ public class SettingsRepository {
     public static final String APP_BASE_URL = "https://vitstudent.sanjaydev.site";
     public static final String APP_ABOUT_URL = APP_BASE_URL + "/about.json";
     public static final String APP_PRIVACY_URL = "https://vtopchennai.therealsuji.tk" + "/privacy-policy";
-
+    public static final String FACULTY_SEARCH_URL = "https://vitstudent.sanjaydev.site/facultySearch" ;
     public static final String DEVELOPER_BASE_URL = "https://sanjay7178.github.io";
 
     public static final String GITHUB_BASE_URL = "https://github.com/sanjay7178/android-vtop-vitap";
@@ -84,6 +84,10 @@ public class SettingsRepository {
 // TODO : VTOP LINK
     public static final String VTOP_BASE_URL = "https://vtop.vitap.ac.in/vtop";
 
+    public static final String UNIV_URL = "http://172.18.10.10:1000/login?" ;
+    public static final String HOSTEL_URL = "https://hfw.vitap.ac.in:8090/httpclient.html" ;
+
+
     public static final int THEME_DAY = 1;
     public static final int THEME_NIGHT = 2;
     public static final int THEME_SYSTEM_DAY = 3;
@@ -93,6 +97,8 @@ public class SettingsRepository {
     public static final int NOTIFICATION_ID_TIMETABLE = 2;
     public static final int NOTIFICATION_ID_VTOP_DOWNLOAD = 3;
     public static final int NOTIFICATION_REFRESH_PAGE = 8 ;
+
+
 
     public static int getTheme(Context context) {
         String appearance = getSharedPreferences(context).getString("appearance", "system");

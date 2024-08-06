@@ -73,6 +73,7 @@
     <string name="sync_data">Sync Data</string>
     <string name="notifications">Notifications</string>
     <string name="share">Share App</string>
+    <string name="faculty_search">Faculty Search</string>
 
     <!-- Download Strings: Strings used while downloading data -->
     <string name="vtop_service_description">Downloads data from VTOP.</string>
@@ -127,6 +128,12 @@
     <string name="contact_developer">Contact the developer</string>
     <string name="open_issue">Open an issue</string>
     <string name="request_feature">Request a feature</string>
+
+    <!-- WIFI BottomSheet Strings -->
+    <string name="wifi_connect">Wifi Connect (Intranet) Beta</string>
+    <string name="university_wifi">Connect to University Wifi</string>
+    <string name="hostel_wifi">Connect to Hostel Wifi</string>
+
 
     <!-- Sign Out BottomSheet Strings -->
     <string name="sign_out_moodle">Sign out of Moodle</string>

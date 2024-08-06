@@ -168,7 +168,31 @@ public class ProfileFragment extends Fragment {
                         context.startActivity(intent);
                     },
                     null
+            ), new ItemData(
+            R.drawable.ic_faculty_search,
+            R.string.faculty_search,
+            context -> SettingsRepository.openWebViewActivity(
+                    context,
+                    context.getString(R.string.faculty_search),
+                    SettingsRepository.FACULTY_SEARCH_URL
             ),
+            null
+    ),
+            new ItemData(
+                    R.drawable.ic_network_wifi_24,
+                    R.string.wifi_connect,
+                    context -> {
+                        View bottomSheetLayout = View.inflate(context, R.layout.layout_bottom_sheet_wifi, null);
+                        bottomSheetLayout.findViewById(R.id.text_view_university_wifi).setOnClickListener(view -> SettingsRepository.openBrowser(context, SettingsRepository.UNIV_URL));
+                        bottomSheetLayout.findViewById(R.id.text_view_hostel_wifi).setOnClickListener(view -> SettingsRepository.openBrowser(context, SettingsRepository.HOSTEL_URL));
+
+                        BottomSheetDialog bottomSheetDialog = new BottomSheetDialog(context);
+                        bottomSheetDialog.setContentView(bottomSheetLayout);
+                        bottomSheetDialog.show();
+                    },
+                    null
+            ),
+
             new ItemData(
                     R.drawable.ic_privacy,
                     R.string.privacy,
@@ -179,6 +203,7 @@ public class ProfileFragment extends Fragment {
                     ),
                     null
             ),
+
             new ItemData(
                     R.drawable.ic_feedback,
                     R.string.send_feedback,
