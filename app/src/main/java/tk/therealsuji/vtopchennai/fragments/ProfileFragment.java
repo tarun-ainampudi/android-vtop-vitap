@@ -194,6 +194,21 @@ public class ProfileFragment extends Fragment {
             ),
 
             new ItemData(
+                    R.drawable.ic_miscellaneous,
+                    R.string.miscellaneous,
+                    context -> {
+                        View bottomSheetLayout = View.inflate(context, R.layout.layout_bottom_sheet_miscellaneous, null);
+                        bottomSheetLayout.findViewById(R.id.text_view_time_table_scheduler).setOnClickListener(view -> SettingsRepository.openBrowser(context, SettingsRepository.TIME_TABLE_SCHEDULER_URL));
+                        bottomSheetLayout.findViewById(R.id.text_view_faculty_ranker).setOnClickListener(view -> SettingsRepository.openBrowser(context, SettingsRepository.FACULTY_RANKER_URL));
+
+                        BottomSheetDialog bottomSheetDialog = new BottomSheetDialog(context);
+                        bottomSheetDialog.setContentView(bottomSheetLayout);
+                        bottomSheetDialog.show();
+                    },
+                    null
+            ),
+
+            new ItemData(
                     R.drawable.ic_privacy,
                     R.string.privacy,
                     context -> SettingsRepository.openWebViewActivity(

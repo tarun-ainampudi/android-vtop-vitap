@@ -129,6 +129,12 @@
     <string name="open_issue">Open an issue</string>
     <string name="request_feature">Request a feature</string>
 
+    <!-- Miscellaneous BottomSheet Strings -->
+    <string name="miscellaneous">Miscellaneous</string>
+    <string name="faculty_ranker">Faculty Ranker</string>
+    <string name="time_table_scheduler">Time Table Scheduler</string>
+
+
     <!-- WIFI BottomSheet Strings -->
     <string name="wifi_connect">Wifi Connect (Intranet) Beta</string>
     <string name="university_wifi">Connect to University Wifi</string>
