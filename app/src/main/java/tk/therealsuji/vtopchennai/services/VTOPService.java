@@ -1237,7 +1237,7 @@ public class VTOPService extends Service {
                 "                attendedIndex = i;" +
                 "            } else if (heading.includes('total') && heading.includes('classes')) {" +
                 "                totalIndex = i;" +
-                "            } else if (heading.includes('percentage')) {" +
+                "            } else if (heading.includes('attendance percentage')) {" +
                 "                percentageIndex = i;" +
                 "            }" +
                 "        }" +
@@ -1285,9 +1285,9 @@ public class VTOPService extends Service {
                     attendanceItem.courseId = this.getCourseId(attendanceObject.getString("slot"), courseType);
                     attendanceItem.attended = this.getIntegerValue(attendanceObject, "attended");
                     attendanceItem.total = this.getIntegerValue(attendanceObject, "total");
+                    attendanceItem.percentage = (int) Math.ceil(this.getFloatValue(attendanceObject,"percentage"));
 
                     if (attendanceItem.attended != null && attendanceItem.total != null && attendanceItem.total != 0) {
-                        attendanceItem.percentage = (int) Math.ceil((attendanceItem.attended * 100.0) / attendanceItem.total);
                         overallAttendance += attendanceItem.percentage;
                         ++attendanceLength;
                     }
@@ -1334,6 +1334,12 @@ public class VTOPService extends Service {
                 error(601, e.getLocalizedMessage());
             }
         });
+    }
+
+    public float getFloatValue(JSONObject json, String key) {
+        // optDouble returns a double value, with a default if the key doesn't exist.
+        // Cast to float as needed.
+        return (float) json.optDouble(key, 0.0);
     }
 
     /**
@@ -1517,6 +1523,7 @@ public class VTOPService extends Service {
             }
         });
     }
+
 
     /**
      * Function to download the grades.
