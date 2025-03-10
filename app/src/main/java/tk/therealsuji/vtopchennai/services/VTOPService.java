@@ -1224,7 +1224,7 @@ public class VTOPService extends Service {
                 "        var doc = new DOMParser().parseFromString(res, 'text/html');" +
                 "        var thead = doc.querySelector('#AttendanceDetailDataTable > thead');" +
                 "        var headings = thead.getElementsByTagName('td');" +
-                "        var courseTypeIndex, classIndex, facultyIndex, attendedIndex, totalIndex, percentageIndex;" +
+                "        var courseTypeIndex, classIndex, facultyIndex, attendedIndex, totalIndex, percentageIndex,cat2_fat_percentage_index;" +
                 "        for (var i = 0; i < headings.length; ++i) {" +
                 "            var heading = headings[i].innerText.toLowerCase();" +
                 "            if (heading.includes('course')) {" +
@@ -1237,20 +1237,25 @@ public class VTOPService extends Service {
                 "                attendedIndex = i;" +
                 "            } else if (heading.includes('total') && heading.includes('classes')) {" +
                 "                totalIndex = i;" +
-                "            } else if (heading.includes('attendance percentage')) {" +
+                "            } else if (heading.includes('attendance')&&heading.includes('percentage')) {" +
                 "                percentageIndex = i;" +
-                "            }" +
+                "            }else if (heading.includes('cat2')&&heading.includes('fat')&&heading.includes('period')&&heading.includes('percentage')){" +
+                "             cat2_fat_percentage_index=i;}"+
                 "        }" +
                 "        var tbody = doc.querySelector('#AttendanceDetailDataTable > tbody');" +
                 "        var cells = tbody.getElementsByTagName('td');" +
                 "        while (courseTypeIndex < cells.length && classIndex < cells.length && attendedIndex < cells.length && totalIndex < cells.length && percentageIndex < cells.length && facultyIndex < cells.length) {" +
                 "            var attendanceObject = {};" +
                 "            attendanceObject.course_type = cells[courseTypeIndex].innerText.trim().split('-')[2].trim().toLowerCase().includes('lab') ? 'Lab Only' : 'Theory Only';" +
+                "            var attendance_percentage = parseInt(cells[percentageIndex].innerText.trim()) || 0;"+
+                "            var cat2_fat_percentage = parseInt(cells[cat2_fat_percentage_index].innerText.trim()) || 0;"+
                 "            var slotsplit = cells[classIndex].innerText.trim().split('-')[1].trim();" +
                 "            attendanceObject.slot = slotsplit.split('+')[0].trim();" +
                 "            attendanceObject.attended = parseInt(cells[attendedIndex].innerText.trim()) || 0;" +
                 "            attendanceObject.total = parseInt(cells[totalIndex].innerText.trim()) || 0;" +
-                "            attendanceObject.percentage = parseInt(cells[percentageIndex].innerText.trim()) || 0;" +
+                "            if (attendance_percentage > cat2_fat_percentage) {" +
+                "            attendanceObject.percentage = attendance_percentage;" +
+                "            }else{attendanceObject.percentage = cat2_fat_percentage;}" +
                 "            response.attendance.push(attendanceObject);" +
                 "            courseTypeIndex += headings.length;" +
                 "            classIndex += headings.length;" +
@@ -1258,6 +1263,7 @@ public class VTOPService extends Service {
                 "            attendedIndex += headings.length;" +
                 "            totalIndex += headings.length;" +
                 "            percentageIndex += headings.length;" +
+                "            cat2_fat_percentage_index += headings.length;"+
                 "        }" +
                 "    }" +
                 "});" +
