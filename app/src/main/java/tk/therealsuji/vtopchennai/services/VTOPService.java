@@ -1255,7 +1255,7 @@ public class VTOPService extends Service {
                 "            attendanceObject.total = parseInt(cells[totalIndex].innerText.trim()) || 0;" +
                 "            if (attendance_percentage > cat2_fat_percentage) {" +
                 "            attendanceObject.percentage = attendance_percentage;" +
-                "            }else{attendanceObject.percentage = cat2_fat_percentage;}" +
+                "            }else{attendanceObject.percentage = attendance_percentage;}//change attendance_percentage to cat2_fat_percentage for max percentage" +
                 "            response.attendance.push(attendanceObject);" +
                 "            courseTypeIndex += headings.length;" +
                 "            classIndex += headings.length;" +
