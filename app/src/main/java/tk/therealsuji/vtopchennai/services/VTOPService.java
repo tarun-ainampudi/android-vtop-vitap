@@ -1405,16 +1405,17 @@ public class VTOPService extends Service {
                 "       for (var i = 0; i < tableContent.length; i += 2) { " +
                 "           var cells = tableContent[i].getElementsByTagName('td'); " +
                 "           var innerCells = tableContent[i + 1] ? tableContent[i + 1].getElementsByTagName('td') : null; " +
-                "           if (innerCells) { " +
-                "               var slot = cells[slotIndex].textContent.trim().split('+')[0].trim(); " +
-                "               var course_type = cells[courseTypeIndex].textContent.trim().toLowerCase().includes('lab') ? 'lab' : 'theory'; " +
-                "               var faculty = cells[facultyIndex].textContent.trim(); " +
-                "               var title = innerCells[10].textContent.trim(); " +
-                "               var score = parseFloat(innerCells[14].textContent.trim()); " +
-                "               var max_score = parseFloat(innerCells[11].textContent.trim()); " +
-                "               var weightage = parseFloat(innerCells[15].textContent.trim()); " +
-                "               var max_weightage = parseFloat(innerCells[12].textContent.trim()); " +
-                "               var status = innerCells[13].textContent.trim(); " +
+                "           var slot = cells[slotIndex].textContent.trim().split('+')[0].trim(); " +
+                "           var course_type = cells[courseTypeIndex].textContent.trim().toLowerCase().includes('lab') ? 'lab' : 'theory'; " +
+                "           var faculty = cells[facultyIndex].textContent.trim(); " +
+                "           var nOfRows=Math.floor((innerCells.length-8)/8); " +
+                "        for(var j=0; j<nOfRows ; j++){ " +
+                "               var title = innerCells[10+j*8].textContent.trim(); " +
+                "              var score = parseFloat(innerCells[14+j*8].textContent.trim());" +
+                "              var max_score = parseFloat(innerCells[11+j*8].textContent.trim()); " +
+                "               var weightage = parseFloat(innerCells[15+j*8].textContent.trim()); " +
+                "               var max_weightage = parseFloat(innerCells[12+j*8].textContent.trim()); " +
+                "               var status = innerCells[13+j*8].textContent.trim(); " +
                 "               marksArray.push({ slot, course_type, title, score, max_score, weightage, max_weightage, average: null, status , faculty }); " +
                 "           } " +
                 "       } " +
