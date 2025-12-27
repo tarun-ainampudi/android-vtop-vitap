@@ -273,7 +273,6 @@ public class MainActivity extends AppCompatActivity {
         getSupportFragmentManager().setFragmentResultListener("syncData", this, (requestKey, result) -> this.syncData());
         getSupportFragmentManager().setFragmentResultListener("getUnreadCount", this, (requestKey, result) -> this.getUnreadCount());
         getSupportFragmentManager().setFragmentResultListener("applyDynamicColors", this, (requestKey, result) -> this.recreate());
-
         this.getUnreadCount();
 
         this.bottomNavigationView.setOnItemSelectedListener(item -> {

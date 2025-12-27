@@ -13,8 +13,11 @@ import android.graphics.ColorMatrixColorFilter;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.InsetDrawable;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.view.View;
 import android.webkit.WebView;
 import android.widget.ImageView;
@@ -30,7 +33,12 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.elevation.ElevationOverlayProvider;
 import com.google.android.material.shape.MaterialShapeDrawable;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Objects;
 
 import tk.therealsuji.vtopchennai.R;
@@ -44,7 +52,7 @@ public class VTOPHelper {
     Intent vtopServiceIntent;
     SharedPreferences sharedPreferences;
     VTOPService vtopService;
-
+    boolean manualCaptcha;
     Dialog captchaDialog, semesterDialog;
     ReCaptchaDialogFragment reCaptchaDialogFragment;
 
@@ -68,119 +76,178 @@ public class VTOPHelper {
                  */
                 @Override
                 public void onRequestCaptcha(int captchaType, Bitmap bitmap, WebView webView) {
-                    if (captchaType == VTOPService.CAPTCHA_DEFAULT) {
-                        View captchaLayout = ((Activity) context).getLayoutInflater().inflate(R.layout.layout_dialog_captcha_default, null);
-                        ImageView captchaImage = captchaLayout.findViewById(R.id.image_view_captcha);
-                        captchaImage.setImageBitmap(bitmap);
+                    if (webView != null) {
+                        webView.evaluateJavascript(
+                                "(function() {" +
+                                        "  var captchaBlock = document.getElementById('captchaBlock');" +
+                                        "  if (captchaBlock) {" +
+                                        "    var captchaImage = captchaBlock.getElementsByTagName(\"img\")[0];" +
+                                        "    if (captchaImage) return captchaImage.src;" +
+                                        "  }" +
+                                        "  return null;" +
+                                        "})()",
+                                value -> {
+                                    if (value != null && !value.equals("null")) {
+                                        String enCSource = Base64.getEncoder().encodeToString(value.getBytes());
+                                        String capUrl = "https://cap.va.synaptic.gg/cap/" + enCSource;
 
-                        captchaDialog = new MaterialAlertDialogBuilder(context)
-                                .setNegativeButton(R.string.cancel, (dialogInterface, i) -> dialogInterface.cancel())
-                                .setOnCancelListener(dialogInterface -> {
+                                        // Perform network request in a background thread
+                                        new Thread(() -> {
+                                            String capText = "";
+                                            try {
+                                                URL url = new URL(capUrl); // <-- use your real URL here
+                                                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                                                conn.setRequestMethod("GET");
+
+                                                BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                                                StringBuilder content = new StringBuilder();
+                                                String inputLine;
+
+                                                while ((inputLine = in.readLine()) != null) {
+                                                    content.append(inputLine);
+                                                }
+
+                                                in.close();
+                                                conn.disconnect();
+
+                                                capText = content.toString();
+                                            } catch (Exception e) {
+                                                manualCaptcha = true;
+                                            }
+
+                                            boolean finalManualCaptcha = capText.isEmpty();
+                                            // Update UI or shared flag on main thread
+                                            String finalCapText = capText;
+                                            new Handler(Looper.getMainLooper()).post(() -> {
+                                                manualCaptcha = finalManualCaptcha;
+                                                vtopService.signIn(finalCapText);
+
+                                            });
+                                        }).start();
+
+                                    } else {
+                                        manualCaptcha = true;
+                                    }
+                                }
+                        );
+                    }
+
+                    if(manualCaptcha){
+
+                        if (captchaType == VTOPService.CAPTCHA_DEFAULT) {
+                            View captchaLayout = ((Activity) context).getLayoutInflater().inflate(R.layout.layout_dialog_captcha_default, null);
+                            ImageView captchaImage = captchaLayout.findViewById(R.id.image_view_captcha);
+                            captchaImage.setImageBitmap(bitmap);
+
+                            captchaDialog = new MaterialAlertDialogBuilder(context)
+                                    .setNegativeButton(R.string.cancel, (dialogInterface, i) -> dialogInterface.cancel())
+                                    .setOnCancelListener(dialogInterface -> {
+                                        try {
+                                            vtopService.endService(false);
+                                        } catch (Exception ignored) {
+                                        }
+                                    })
+                                    .setTitle(R.string.solve_captcha)
+                                    .setPositiveButton(R.string.submit, (dialogInterface, i) -> {
+                                        TextView captchaText = captchaLayout.findViewById(R.id.edit_text_captcha);
+                                        vtopService.signIn(captchaText.getText().toString());
+                                    })
+                                    .setView(captchaLayout)
+                                    .create();
+
+                            Drawable background = Objects.requireNonNull(captchaDialog.getWindow()).getDecorView().getBackground();
+                            if (background instanceof InsetDrawable) {
+                                background = ((InsetDrawable) background).getDrawable();
+
+                                if (background instanceof MaterialShapeDrawable && ((MaterialShapeDrawable) background).getFillColor() != null) {
+                                    // Getting the color and elevation of the dialog background
+                                    int backgroundColor = Objects.requireNonNull(((MaterialShapeDrawable) background).getFillColor()).getDefaultColor();
+                                    float backgroundElevation = ((MaterialShapeDrawable) background).getElevation();
+                                    float[] colorMatrix = {
+                                            0, 0, 0, 0, 255,    // red
+                                            0, 0, 0, 0, 255,    // green
+                                            0, 0, 0, 0, 255,    // blue
+                                            0, 0, 0, 1, 0,      // alpha
+                                    };
+
+                                    // Updating the color matrix based on the application theme
+                                    int appearance = SettingsRepository.getTheme(context);
+                                    if (appearance == SettingsRepository.THEME_NIGHT || appearance == SettingsRepository.THEME_SYSTEM_NIGHT) {
+                                        colorMatrix[0] = (Color.red(backgroundColor) - 255f) / 255f;
+                                        colorMatrix[6] = (Color.green(backgroundColor) - 255f) / 255f;
+                                        colorMatrix[12] = (Color.blue(backgroundColor) - 255f) / 255f;
+                                    } else {
+                                        colorMatrix[0] = Color.red(backgroundColor) / 255f;
+                                        colorMatrix[6] = Color.green(backgroundColor) / 255f;
+                                        colorMatrix[12] = Color.blue(backgroundColor) / 255f;
+
+                                        colorMatrix[4] = 0;
+                                        colorMatrix[9] = 0;
+                                        colorMatrix[14] = 0;
+                                    }
+
+                                    // Setting the alpha value for the captcha overlay
+                                    int elevationOverlayColor = MaterialColors.getColor(context, R.attr.elevationOverlayColor, 0);
+                                    ColorDrawable overlay = new ColorDrawable(elevationOverlayColor);
+                                    overlay.setAlpha(new ElevationOverlayProvider(context).calculateOverlayAlpha(backgroundElevation));
+
+                                    // Updating the captcha image colors and adding the overlay
+                                    captchaImage.setColorFilter(new ColorMatrixColorFilter(colorMatrix));
+                                    captchaImage.setForeground(overlay);
+                                }
+                            }
+
+                            captchaDialog.setCanceledOnTouchOutside(false);
+                            captchaDialog.show();
+                        } else {
+                            DisplayMetrics displayMetrics = context.getResources().getDisplayMetrics();
+
+                            float pixelDensity = displayMetrics.density;
+                            float width = displayMetrics.widthPixels;
+                            float scale = (width / pixelDensity - 80) / 300;
+
+                            if (scale > 1) {
+                                scale = 1;
+                            }
+
+                            webView.evaluateJavascript("(function() {" +
+                                    "var body = document.getElementsByTagName('body')[0];" +
+                                    "body.style.backgroundColor = 'transparent';" +
+                                    "body.style.visibility = 'hidden';" +
+                                    "var children = body.children;" +
+                                    "for (var i = 0; i < children.length; ++i) {" +
+                                    "    children[i].style.display = 'none';" +
+                                    "}" +
+                                    "var captchaInterval = setInterval(function() {" +
+                                    "    var children = document.getElementsByTagName('body')[0].children;" +
+                                    "    var captcha = children[children.length - 1];" +
+                                    "    if (captcha.children.length >= 2) {" +
+                                    "        captcha.children[0].style.display = 'none';" +
+                                    "        captcha.children[1].style.transform = 'scale(" + scale + ")';" +
+                                    "        captcha.children[1].style.transformOrigin = '0 0';" +
+                                    "        captcha.style.display = 'block';" +
+                                    "        body.style.visibility = 'visible';" +
+                                    "        clearInterval(captchaInterval);" +
+                                    "    }" +
+                                    "}, 500);" +
+                                    "})();", value -> {
+                                reCaptchaDialogFragment = new ReCaptchaDialogFragment(webView, () -> {
                                     try {
                                         vtopService.endService(false);
                                     } catch (Exception ignored) {
                                     }
-                                })
-                                .setTitle(R.string.solve_captcha)
-                                .setPositiveButton(R.string.submit, (dialogInterface, i) -> {
-                                    TextView captchaText = captchaLayout.findViewById(R.id.edit_text_captcha);
-                                    vtopService.signIn(captchaText.getText().toString());
-                                })
-                                .setView(captchaLayout)
-                                .create();
+                                });
 
-                        Drawable background = Objects.requireNonNull(captchaDialog.getWindow()).getDecorView().getBackground();
-                        if (background instanceof InsetDrawable) {
-                            background = ((InsetDrawable) background).getDrawable();
+                                FragmentManager fragmentManager = ((FragmentActivity) context).getSupportFragmentManager();
 
-                            if (background instanceof MaterialShapeDrawable && ((MaterialShapeDrawable) background).getFillColor() != null) {
-                                // Getting the color and elevation of the dialog background
-                                int backgroundColor = Objects.requireNonNull(((MaterialShapeDrawable) background).getFillColor()).getDefaultColor();
-                                float backgroundElevation = ((MaterialShapeDrawable) background).getElevation();
-                                float[] colorMatrix = {
-                                        0, 0, 0, 0, 255,    // red
-                                        0, 0, 0, 0, 255,    // green
-                                        0, 0, 0, 0, 255,    // blue
-                                        0, 0, 0, 1, 0,      // alpha
-                                };
-
-                                // Updating the color matrix based on the application theme
-                                int appearance = SettingsRepository.getTheme(context);
-                                if (appearance == SettingsRepository.THEME_NIGHT || appearance == SettingsRepository.THEME_SYSTEM_NIGHT) {
-                                    colorMatrix[0] = (Color.red(backgroundColor) - 255f) / 255f;
-                                    colorMatrix[6] = (Color.green(backgroundColor) - 255f) / 255f;
-                                    colorMatrix[12] = (Color.blue(backgroundColor) - 255f) / 255f;
-                                } else {
-                                    colorMatrix[0] = Color.red(backgroundColor) / 255f;
-                                    colorMatrix[6] = Color.green(backgroundColor) / 255f;
-                                    colorMatrix[12] = Color.blue(backgroundColor) / 255f;
-
-                                    colorMatrix[4] = 0;
-                                    colorMatrix[9] = 0;
-                                    colorMatrix[14] = 0;
-                                }
-
-                                // Setting the alpha value for the captcha overlay
-                                int elevationOverlayColor = MaterialColors.getColor(context, R.attr.elevationOverlayColor, 0);
-                                ColorDrawable overlay = new ColorDrawable(elevationOverlayColor);
-                                overlay.setAlpha(new ElevationOverlayProvider(context).calculateOverlayAlpha(backgroundElevation));
-
-                                // Updating the captcha image colors and adding the overlay
-                                captchaImage.setColorFilter(new ColorMatrixColorFilter(colorMatrix));
-                                captchaImage.setForeground(overlay);
-                            }
-                        }
-
-                        captchaDialog.setCanceledOnTouchOutside(false);
-                        captchaDialog.show();
-                    } else {
-                        DisplayMetrics displayMetrics = context.getResources().getDisplayMetrics();
-
-                        float pixelDensity = displayMetrics.density;
-                        float width = displayMetrics.widthPixels;
-                        float scale = (width / pixelDensity - 80) / 300;
-
-                        if (scale > 1) {
-                            scale = 1;
-                        }
-
-                        webView.evaluateJavascript("(function() {" +
-                                "var body = document.getElementsByTagName('body')[0];" +
-                                "body.style.backgroundColor = 'transparent';" +
-                                "body.style.visibility = 'hidden';" +
-                                "var children = body.children;" +
-                                "for (var i = 0; i < children.length; ++i) {" +
-                                "    children[i].style.display = 'none';" +
-                                "}" +
-                                "var captchaInterval = setInterval(function() {" +
-                                "    var children = document.getElementsByTagName('body')[0].children;" +
-                                "    var captcha = children[children.length - 1];" +
-                                "    if (captcha.children.length >= 2) {" +
-                                "        captcha.children[0].style.display = 'none';" +
-                                "        captcha.children[1].style.transform = 'scale(" + scale + ")';" +
-                                "        captcha.children[1].style.transformOrigin = '0 0';" +
-                                "        captcha.style.display = 'block';" +
-                                "        body.style.visibility = 'visible';" +
-                                "        clearInterval(captchaInterval);" +
-                                "    }" +
-                                "}, 500);" +
-                                "})();", value -> {
-                            reCaptchaDialogFragment = new ReCaptchaDialogFragment(webView, () -> {
-                                try {
-                                    vtopService.endService(false);
-                                } catch (Exception ignored) {
+                                if (!fragmentManager.isDestroyed()) {
+                                    fragmentManager
+                                            .beginTransaction()
+                                            .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN)
+                                            .add(android.R.id.content, reCaptchaDialogFragment).addToBackStack(null).commit();
                                 }
                             });
-
-                            FragmentManager fragmentManager = ((FragmentActivity) context).getSupportFragmentManager();
-
-                            if (!fragmentManager.isDestroyed()) {
-                                fragmentManager
-                                        .beginTransaction()
-                                        .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN)
-                                        .add(android.R.id.content, reCaptchaDialogFragment).addToBackStack(null).commit();
-                            }
-                        });
+                        }
                     }
                 }
 

@@ -14,6 +14,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.util.Base64;
+import android.util.Log;
 import android.view.ViewGroup;
 import android.webkit.CookieManager;
 import android.webkit.JavascriptInterface;
@@ -72,6 +73,8 @@ import tk.therealsuji.vtopchennai.models.Slot;
 import tk.therealsuji.vtopchennai.models.Spotlight;
 import tk.therealsuji.vtopchennai.models.Staff;
 import tk.therealsuji.vtopchennai.models.Timetable;
+import android.net.http.SslError;
+import android.webkit.SslErrorHandler;
 
 public class VTOPService extends Service {
     public static final int CAPTCHA_DEFAULT = 1;
@@ -196,6 +199,7 @@ public class VTOPService extends Service {
                         "return response;" +
                         "})();", responseString -> {
                     try {
+                        //Log.d("Landing","res : "+responseString.toString());
                         JSONObject response = new JSONObject(responseString);
                         String pageType = response.getString("page_type");
 
@@ -247,6 +251,10 @@ public class VTOPService extends Service {
                         e.printStackTrace();
                     }
                 });
+            }
+            public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
+                handler.proceed();   // Ignore SSL certificate errors
+                // handler.cancel();  // Use this instead to block
             }
         });
     }
@@ -438,7 +446,7 @@ public class VTOPService extends Service {
                 Bitmap decodedImage = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length);
 
                 try {
-                    this.callback.onRequestCaptcha(CAPTCHA_DEFAULT, decodedImage, null);
+                    this.callback.onRequestCaptcha(CAPTCHA_DEFAULT, decodedImage, this.webView);
                 } catch (Exception ignored) {
                     this.endService(true);
                 }
@@ -462,7 +470,7 @@ public class VTOPService extends Service {
 
         /*
             Overriding the existing onSubmit function and attempting to render the reCaptcha
-         */
+        */
         webView.evaluateJavascript("function callBuiltValidation(token) {" +
                 "    Android.signIn(token);" +
                 "}" +
@@ -559,7 +567,6 @@ public class VTOPService extends Service {
                         try {
                             JSONObject response = new JSONObject(responseString);
                             boolean isAuthorised = response.getBoolean("authorised");
-
                             if (isAuthorised) {
                                 this.reloadPage("/content", false);
                             } else {
@@ -848,7 +855,7 @@ public class VTOPService extends Service {
                 "            course.title = rawCourse.split('-').slice(1).join('-').split('(')[0].trim();" +
                 "            course.type = (rawCourseType.includes('lab')) ? 'lab' : ((rawCourseType.includes('project')) ? 'project' : 'theory');" +
                 "            course.credits = parseInt(rawCredits[rawCredits.length - 1]) || 0;" +
-                "            course.slots = rawSlotVenue[0].trim().split('+');" +
+                "            course.slots = rawSlotVenue[0].trim().split('+')[0].includes('NILL') ? [course.code] : rawSlotVenue[0].trim().split('+');" +
                 "            course.venue = rawSlotVenue.slice(1, rawSlotVenue.length).join(' - ').trim();" +
                 "            course.faculty = rawFaculty[0].trim();" +
                 "            response.courses.push(course);" +
@@ -864,6 +871,7 @@ public class VTOPService extends Service {
             try {
                 JSONObject response = new JSONObject(responseString);
                 JSONArray courseArray = response.getJSONArray("courses");
+                //Log.d("Courses", "downloadCourses: "+courseArray.toString());
 
                 List<Course> courses = new ArrayList<>();
                 List<Slot> slots = new ArrayList<>();
@@ -951,6 +959,7 @@ public class VTOPService extends Service {
                         });
             } catch (Exception e) {
                 error(401, e.getLocalizedMessage());
+                //Log.d("401",e.getLocalizedMessage());
             }
         });
     }
@@ -1390,7 +1399,7 @@ public class VTOPService extends Service {
                 "       var table = doc.getElementById('fixedTableContainer'); " +
                 "       var rows = table.getElementsByTagName('tr'); " +
                 "       var headings = rows[0].getElementsByTagName('td'); " +
-                "       var courseTypeIndex, slotIndex , facultyIndex;" +
+                "       var courseCodeIndex, courseTypeIndex, slotIndex , facultyIndex;" +
                 "       for (var i = 0; i < headings.length; ++i) { " +
                 "           var heading = headings[i].innerText.toLowerCase(); " +
                 "           if (heading.includes('course') && heading.includes('type')) { " +
@@ -1399,14 +1408,17 @@ public class VTOPService extends Service {
                 "               slotIndex = i; " +
                 "           }else if (heading.includes('faculty')){" +
                 "           facultyIndex = i; }"+
+                "           else if (heading.includes('course') && heading.includes('code')){" +
+                "           courseCodeIndex = i; }"+
                 "       } " +
                 "       var tableContent = doc.querySelector('#fixedTableContainer > table > tbody').getElementsByClassName('tableContent'); " +
                 "       marksArray = []; " +
                 "       for (var i = 0; i < tableContent.length; i += 2) { " +
                 "           var cells = tableContent[i].getElementsByTagName('td'); " +
                 "           var innerCells = tableContent[i + 1] ? tableContent[i + 1].getElementsByTagName('td') : null; " +
-                "           var slot = cells[slotIndex].textContent.trim().split('+')[0].trim(); " +
-                "           var course_type = cells[courseTypeIndex].textContent.trim().toLowerCase().includes('lab') ? 'lab' : 'theory'; " +
+                "           var course_code = cells[courseCodeIndex].textContent.trim(); " +
+                "           var slot = cells[slotIndex].textContent.trim().split('+')[0].trim().includes('NILL') ? course_code : cells[slotIndex].textContent.trim().split('+')[0].trim(); " +
+                "           var course_type = cells[courseTypeIndex].textContent.trim().toLowerCase().includes('lab') ? 'lab' : cells[courseTypeIndex].textContent.trim().toLowerCase().includes('theory') ? 'theory' : 'project'; " +
                 "           var faculty = cells[facultyIndex].textContent.trim(); " +
                 "           var nOfRows=Math.floor((innerCells.length-8)/8); " +
                 "        for(var j=0; j<nOfRows ; j++){ " +
@@ -1427,6 +1439,7 @@ public class VTOPService extends Service {
             try {
                 JSONObject response = new JSONObject(responseString);
                 JSONArray marksArray = response.getJSONArray("marks");
+                //Log.d("Download Marks", "downloadMarks: "+marksArray.toString());
                 Map<Integer, Mark> marks = new HashMap<>();
 
                 this.cumulativeMarks = new HashMap<>();

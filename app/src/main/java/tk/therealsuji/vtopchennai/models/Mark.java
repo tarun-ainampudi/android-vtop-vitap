@@ -62,5 +62,10 @@ public class Mark {
         public Double average;
         public String status;
         public Boolean isRead;
+
+        //for debugging
+        public String getCourseData(){
+            return "courseCode : "+ this.courseCode+" courseTitle : "+ this.courseTitle+" courseType : "+ this.courseType;
+        }
     }
 }

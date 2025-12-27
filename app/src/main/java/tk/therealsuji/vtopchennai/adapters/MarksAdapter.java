@@ -1,5 +1,6 @@
 package tk.therealsuji.vtopchennai.adapters;
 
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -162,15 +163,14 @@ public class MarksAdapter extends RecyclerView.Adapter<MarksAdapter.ViewHolder> 
 
         public void segregateMarks(List<Mark.AllData> marks) {
             this.marks = new HashMap<>();
-
             for (int i = 0; i < marks.size(); ++i) {
                 Mark.AllData mark = marks.get(i);
                 String courseType = mark.courseType;
+                //Log.d("segregateMarks",mark.courseType+": "+mark.getCourseData());
 
                 if (!this.marks.containsKey(courseType)) {
                     this.marks.put(courseType, new ArrayList<>());
                 }
-
                 Objects.requireNonNull(this.marks.get(courseType)).add(mark);
             }
 

@@ -136,7 +136,7 @@ public class SettingsRepository {
 
     public static boolean isRefreshRequired(Context context) {
         Calendar c = Calendar.getInstance();
-        c.add(Calendar.DATE, -7);
+        c.add(Calendar.DATE, -1);
 
         Date now = c.getTime();
         Date lastRefreshed = new Date(getSharedPreferences(context).getLong("lastRefreshed", 0));
